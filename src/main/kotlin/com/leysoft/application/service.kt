@@ -3,6 +3,7 @@ package com.leysoft.application
 import arrow.Kind
 import arrow.fx.ForIO
 import arrow.fx.IO
+import arrow.fx.typeclasses.Effect
 import com.leysoft.domain.Person
 import com.leysoft.domain.PersonRepository
 
@@ -17,18 +18,22 @@ interface PersonService<F> {
     fun delete(person: Person): Kind<F, Boolean>
 }
 
-class DefaultPersonService<F> private constructor(private val repository: PersonRepository<ForIO>) : PersonService<ForIO> {
+class DefaultPersonService<F> private constructor(
+    private val A: Effect<F>,
+    private val repository: PersonRepository<F>) : PersonService<F>, Effect<F> by A {
 
-    override fun getById(id: String): Kind<ForIO, Person> = repository.findById(id)
+    override fun getById(id: String): Kind<F, Person> = repository.findById(id)
 
-    override fun getAll(): Kind<ForIO, List<Person>> = repository.findAll()
+    override fun getAll(): Kind<F, List<Person>> = repository.findAll()
 
-    override fun create(person: Person): Kind<ForIO, Unit> = repository.save(person)
+    override fun create(person: Person): Kind<F, Unit> = repository.save(person)
 
-    override fun delete(person: Person): Kind<ForIO, Boolean> = repository.delete(person)
+    override fun delete(person: Person): Kind<F, Boolean> = repository.delete(person)
 
     companion object {
 
-        fun make(repository: PersonRepository<ForIO>) : IO<PersonService<ForIO>> = IO { DefaultPersonService<ForIO>(repository) }
+        fun <F> build(A: Effect<F>, repository: PersonRepository<F>) : PersonService<F> = DefaultPersonService(A, repository)
+
+        fun <F> make(A: Effect<F>, repository: PersonRepository<F>) : Kind<F, PersonService<F>> = A.later { build(A, repository) }
     }
 }
