@@ -1,8 +1,6 @@
 package com.leysoft.application
 
 import arrow.Kind
-import arrow.fx.ForIO
-import arrow.fx.IO
 import arrow.fx.typeclasses.Effect
 import com.leysoft.domain.Person
 import com.leysoft.domain.PersonRepository
@@ -19,8 +17,8 @@ interface PersonService<F> {
 }
 
 class DefaultPersonService<F> private constructor(
-    private val A: Effect<F>,
-    private val repository: PersonRepository<F>) : PersonService<F>, Effect<F> by A {
+    private val Q: Effect<F>,
+    private val repository: PersonRepository<F>) : PersonService<F>, Effect<F> by Q {
 
     override fun getById(id: String): Kind<F, Person> = repository.findById(id)
 
@@ -32,8 +30,8 @@ class DefaultPersonService<F> private constructor(
 
     companion object {
 
-        fun <F> build(A: Effect<F>, repository: PersonRepository<F>) : PersonService<F> = DefaultPersonService(A, repository)
+        fun <F> build(Q: Effect<F>, repository: PersonRepository<F>) : PersonService<F> = DefaultPersonService(Q, repository)
 
-        fun <F> make(A: Effect<F>, repository: PersonRepository<F>) : Kind<F, PersonService<F>> = A.later { build(A, repository) }
+        fun <F> make(Q: Effect<F>, repository: PersonRepository<F>) : Kind<F, PersonService<F>> = Q.later { build(Q, repository) }
     }
 }
