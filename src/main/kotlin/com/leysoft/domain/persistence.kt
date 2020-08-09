@@ -1,10 +1,11 @@
 package com.leysoft.domain
 
 import arrow.Kind
+import arrow.core.Option
 
 interface PersonRepository<F> {
 
-    fun findById(id: String): Kind<F, Person>
+    fun findById(id: String): Kind<F, Option<Person>>
 
     fun findAll(): Kind<F, List<Person>>
 

@@ -1,9 +1,11 @@
 package com.leysoft.application
 
 import arrow.Kind
+import arrow.core.Some
 import arrow.fx.typeclasses.Effect
 import com.leysoft.domain.Person
 import com.leysoft.domain.PersonRepository
+import java.lang.RuntimeException
 
 interface PersonService<F> {
 
@@ -21,6 +23,12 @@ class DefaultPersonService<F> private constructor(
     private val repository: PersonRepository<F>) : PersonService<F>, Effect<F> by Q {
 
     override fun getById(id: String): Kind<F, Person> = repository.findById(id)
+        .flatMap {
+            when(it) {
+                is Some -> just(it.t)
+                else    -> raiseError(RuntimeException("Not found person: $id"))
+            }
+        }
 
     override fun getAll(): Kind<F, List<Person>> = repository.findAll()
 
@@ -30,8 +38,10 @@ class DefaultPersonService<F> private constructor(
 
     companion object {
 
-        fun <F> build(Q: Effect<F>, repository: PersonRepository<F>) : PersonService<F> = DefaultPersonService(Q, repository)
+        fun <F> build(Q: Effect<F>, repository: PersonRepository<F>) : PersonService<F> =
+            DefaultPersonService(Q, repository)
 
-        fun <F> make(Q: Effect<F>, repository: PersonRepository<F>) : Kind<F, PersonService<F>> = Q.later { build(Q, repository) }
+        fun <F> make(Q: Effect<F>, repository: PersonRepository<F>) : Kind<F, PersonService<F>> =
+            Q.later { build(Q, repository) }
     }
 }

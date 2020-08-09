@@ -21,11 +21,14 @@ import arrow.fx.rx2.fix
 import com.leysoft.adapter.out.InMemoryPersonRepository
 import com.leysoft.application.DefaultPersonService
 import com.leysoft.domain.Person
+import java.util.*
 
 fun main() {
 
+    val initId = UUID.randomUUID().toString()
+
     val store = mapOf(
-        "12345" to Person(id = "12345", name = "Test")
+        initId to Person(id = initId, name = "Test")
     )
 
     // Rx
@@ -37,7 +40,7 @@ fun main() {
         { println("[Rx] All: $it") },
         { println("[Rx] Error: $it") }
     )
-    rxService.getById("12345").fix().observable.subscribe(
+    rxService.getById(initId).fix().observable.subscribe(
         { println("[Rx] ById: $it") },
         { println("[Rx] Error: $it") }
     )

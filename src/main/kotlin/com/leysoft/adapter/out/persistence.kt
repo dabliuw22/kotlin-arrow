@@ -3,7 +3,6 @@ package com.leysoft.adapter.out
 import arrow.Kind
 import arrow.core.None
 import arrow.core.Option
-import arrow.core.Some
 import arrow.fx.Ref
 import arrow.fx.typeclasses.Effect
 import com.leysoft.domain.Person
@@ -14,14 +13,8 @@ class InMemoryPersonRepository<F> private constructor(
     private val Q: Effect<F>,
     private val ref: Ref<F, Map<String, Person>>) : PersonRepository<F>, Effect<F> by Q {
 
-    override fun findById(id: String): Kind<F, Person> = ref.get()
+    override fun findById(id: String): Kind<F, Option<Person>> = ref.get()
         .map { Option.fromNullable(it[id]) }
-        .flatMap {
-            when(it) {
-                is Some -> just(it.t)
-                else    -> raiseError(RuntimeException("Not found person: $id"))
-            }
-        }
 
     override fun findAll(): Kind<F, List<Person>> = ref.get()
         .map { it.values.toList() }
@@ -39,10 +32,13 @@ class InMemoryPersonRepository<F> private constructor(
         .map { Option.fromNullable(it[person.id]) }
         .flatMap {
             it.fold(
-                { ref.update { store -> store.minus(person.id) }.map { true } },
-                { just(false) }
+                {
+                    ref.update { store -> store.minus(person.id) }
+                        .map { true }.handleError { false }
+                },
+                { raiseError(RuntimeException("Not save person: $person")) }
             )
-        }.handleError { false }
+        }
 
     companion object {
 
