@@ -25,7 +25,7 @@ import com.leysoft.domain.Person
 
 fun main() {
 
-    val store = mapOf<String, Person>(
+    val store = mapOf(
         "12345" to Person(id = "12345", name = "Test")
     )
 
