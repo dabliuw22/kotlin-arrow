@@ -21,7 +21,7 @@ import arrow.fx.rx2.fix
 import com.leysoft.adapter.out.InMemoryPersonRepository
 import com.leysoft.application.DefaultPersonService
 import com.leysoft.domain.Person
-import java.util.*
+import java.util.UUID
 
 fun main() {
 
