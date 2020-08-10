@@ -32,11 +32,11 @@ class InMemoryPersonRepository<F> private constructor(
         .map { Option.fromNullable(it[person.id]) }
         .flatMap {
             it.fold(
+                { raiseError<Boolean>(RuntimeException("Not found person: $person")) },
                 {
                     ref.update { store -> store.minus(person.id) }
                         .map { true }.handleError { false }
-                },
-                { raiseError(RuntimeException("Not save person: $person")) }
+                }
             )
         }
 
