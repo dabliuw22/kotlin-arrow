@@ -2,8 +2,8 @@ package com.leysoft
 
 import arrow.core.Either.Left
 import arrow.core.Either.Right
-import arrow.fx.ForIO
 import arrow.fx.IO
+import arrow.fx.extensions.fx
 import arrow.fx.Ref
 import arrow.fx.extensions.io.effect.effect
 import arrow.fx.extensions.io.monadDefer.monadDefer
@@ -24,14 +24,31 @@ import com.leysoft.domain.Person
 import java.util.UUID
 
 fun main() {
-
     val initId = UUID.randomUUID().toString()
-
     val store = mapOf(
         initId to Person(id = initId, name = "Test")
     )
 
-    // Rx
+    io(store)
+    rx(store, initId)
+    reactor(store)
+}
+
+fun io(store: Map<String, Person>) {
+    IO.fx {
+        val refIO = Ref(IO.monadDefer(), store).fix().bind()
+        val repository = !(InMemoryPersonRepository.make(IO.effect(), refIO))
+        val service = !(DefaultPersonService.make(IO.effect(), repository))
+        !(service.getAll())
+    }.unsafeRunAsync {
+        when (it) {
+            is Right -> println("[IO] All: ${it.b}")
+            is Left  -> println("[IO] Error: ${it.a}")
+        }
+    }
+}
+
+fun rx(store: Map<String, Person>, id: String) {
     val refRx: Ref<ForObservableK, Map<String, Person>> = Ref(ObservableK.monadDefer(), store)
         .fix().observable.blockingFirst()
     val rxRepository = InMemoryPersonRepository.build(ObservableK.effect(), refRx)
@@ -40,7 +57,7 @@ fun main() {
         { println("[Rx] All: $it") },
         { println("[Rx] Error: $it") }
     )
-    rxService.getById(initId).fix().observable.subscribe(
+    rxService.getById(id).fix().observable.subscribe(
         { println("[Rx] ById: $it") },
         { println("[Rx] Error: $it") }
     )
@@ -49,8 +66,9 @@ fun main() {
         { println("[Rx] All: $it") },
         { println("[Rx] Error: $it") }
     )
+}
 
-    // Reactor Project
+fun reactor(store: Map<String, Person>) {
     val refReactor : Ref<ForMonoK, Map<String, Person>> = Ref(MonoK.monadDefer(), store)
         .fix().mono.block()
     val reactorRepository = InMemoryPersonRepository.build(MonoK.effect(), refReactor)
@@ -59,16 +77,4 @@ fun main() {
         { println("[Reactor] All: $it") },
         { println("[Reactor] Error: $it") }
     )
-
-    // Arrow IO
-    val refIO: IO<Ref<ForIO, Map<String, Person>>> = Ref(IO.monadDefer(), store).fix()
-    refIO.flatMap { InMemoryPersonRepository.make(IO.effect(), it) }
-        .flatMap { DefaultPersonService.make(IO.effect(), it) }
-        .flatMap { it.getAll() }
-        .unsafeRunAsync {
-            when (it) {
-                is Right -> println("[IO] All: ${it.b}")
-                is Left  -> println("[IO] Error: ${it.a}")
-            }
-        }
 }
